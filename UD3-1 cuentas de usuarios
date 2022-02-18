@@ -1,0 +1,32 @@
+#COMANDOS NET
+
+--> net user jc.requena contraseña /add
+
+--> mas comopleto nombre completo:
+net user jc.requena contraseña /fullname:"Juan Carlos Requena" /add
+
+--> habilitar al usuario para cambiar la contraseña:
+
+net user jc.requena contraseña /fullname:"Juan Carlos Requena" /passwordchg /add
+
+--> establecer limite de longitud de la contraseña:
+net accounts /minpwlen:8 
+
+#dsadd user:
+Si desde el controlador del dominio instituto.ies se quisiera crear un usuario en el dominio departamentos.instituto.ies el comando net user no serviría, ya que crearía el usuario en el dominio raíz.
+Para crear desde el controlador del dominio raíz, el usuario jgomez del dominio departamentos.instituto.ies deberíamos ejecutar el siguiente comando:
+
+dsadd user "CN=jgomez, CN=Users, DC=departamentos, DC=instituto, DC=ies" 
+-pwd Contraseña -disabled no
+
+--> comanod mas complejo:
+
+ dsadd user "CN=rperez, CN=Users, DC=instituto, DC=ies" 
+-pwd Hol@hola -disabled no -ln "Pérez García" -fn Roberto 
+-mustchpwd yes -canchpwd yes -memberof "CN=Alumnos, CN=Users, DC=instituto, DC=ies"
+
+--> EJEMPLO comano New-ADUser
+New-ADUser -Name "Juan Carlos" -Path "CN=Users,DC=SMR,DC=LOCAL"
+-SamAccountName "jcrequena" -UserPrincipalName "jcrequena@SMR.LOCAL"
+-AccountPassword (ConvertTo-SecureString "iesmiralcamp2018." -AsPlainText -Force)
+-GivenName "Juan Carlos" -Surname "Requena" -ChangePasswordAtLogon $true -Enabled $true
