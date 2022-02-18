@@ -1,0 +1,54 @@
+#Comandos para añadir un subdominio mediante powershell:
+
+--> instalar ADDS comando:
+
+Install-WindowsFeature –Name AD-Domain-Services –IncludeManagementTools
+
+--> DOMINIO SECUNDARIO (child domain)
+
+Import-Module ADDSDeployment
+Install-ADDSDomain `
+-NoGlobalCatalog:$false `
+-CreateDnsDelegation:$true `
+-Credential (Get-Credential) `
+-DatabasePath "C:\Windows\NTDS" `
+-DomainMode "Win2016" `
+-DomainType "ChildDomain" `
+-InstallDns:$true `
+-LogPath "C:\Windows\NTDS" `
+-NewDomainName "sor" `
+-NewDomainNetbiosName "SOR" `
+-ParentDomainName "smr.local" `
+-NoRebootOnCompletion:$false `
+-SiteName "Default-First-Site-Name" `
+-SysvolPath "C:\Windows\SYSVOL" `
+-Force:$true
+
+--> explicacion:
+
+    Credential: Credenciales del usuario administrador.
+    NewDomainName: Nombre del subdominio.
+    ParentDomainName: Nombre del dominio raíz (padre).
+    DomainType: Tipo de dominio, en nuestro caso, subdominio (Childdomain).
+    InstallDNS: Instala el servidor DNS en el subdominio.
+---> tree domain:
+Durante la creación de subdominio (child domain), el sistema nos solicitará la contraseña del administrador del dominio raíz y la del DSRM (Elimina un objeto de un tipo específico o cualquier objeto general del directorio.); finalmente el sistema (servidor) se reiniciará.
+
+Install-ADDSDomain 
+–Credential (Get-Credential ieselcaminas\administrador) 
+–NewDomainName ampa.es 
+–ParentDomainName ieselcaminas.es 
+–DomainType TreeDomain –InstallDNS
+
+----> explicacion
+
+    Credential: Credenciales del usuario administrador.
+    NewDomainName: Nombre del nuevo dominio (árbol).
+    ParentDomainName: Nombre del dominio raíz (padre).
+    DomainType: Tipo de dominio, en nuestro caso, árbol (Treedomain).
+    InstallDNS: Instala el servidor DNS en el nuevo árbol.
+
+---> comando par comprobar la relacion de confianza entr un bosque
+
+netdom trust nombreDeDominioQueConfía /d:nombreDeDominioDeConfianza /verify
+
