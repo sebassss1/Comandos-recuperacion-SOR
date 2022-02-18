@@ -1,0 +1,73 @@
+#Instalar un dominio básico sin interfaz gráfica:
+
+--> Realizar la configuacion previa del servidor: llamarlo nombre.bat
+
+@echo off 
+for /f %%a in ('hostname') do set ant=%%a 
+echo Nombre actual del servidor: %ant% 
+set /p newName= Escribe un nombre nuevo para el servidor: 
+netdom renamecomputer %ant% /newname:%newName% 
+echo Los valores actuales para la red son: 
+netsh interface ipv4 show interfaces echo Nuevos valores de red: 
+set /p int= Elije la tarjeta de red: 
+set /p ip= Escribe la dirección IP fija: 
+set /p subred= Escribe la máscara de red: 
+set /p gateway= Escribe la puerta de enlace: 
+netsh interface ipv4 set address name=%int% source=static address=%ip% mask=%subred% gateway=%gateway% 
+netsh interface ipv4 add dnsserver name=%int% address=%ip% index=1 
+echo Cambios efectuados. Los valores actuales para la red son:
+netsh interface ipv4 show address
+
+--> Realizar la configuracion previa e instalar el dominio con powershell
+ 
+$nameServer="orion"
+$addressIP="192.25.81.254"
+$networkInternal="Ethernet 1"
+Rename-Computer -NewName $nameServer
+Get-NetAdapter –name $networkInternal | Remove-NetIPAddress -Confirm:$false
+Get-NetAdapter –name $networkInternal | New-NetIPAddress –addressfamily IPv4 –ipaddress $addressIP –prefixlength 24 –type unicast
+Restart-Computer -force
+
+--> COMPROBAR ROLES EN EL SERVIDOR:
+
+Get-Windowsfeature
+
+--> INSTALAR DNS U ACTIVE DIRECTORY
+
+Install-WindowsFeature -name AD-Domain-Services,DNS -IncludeManagementTools 
+
+-->  SABER QUE COMANDOS PODEMOS EJECUTAR EN EL MODULO:
+
+Get-Command -module ADDSDeployment
+
+--> SCRIPT POWERSHELL PARA implementar active directory
+
+$dominioFQDN = "smr.local"
+$dominioNETBIOS = "SMR"
+$adminPass = "sor-smr2021."
+Import-Module ADDSDeployment
+Install-ADDSForest `
+-CreateDnsDelegation:$False `
+-DatabasePath "C:\Windows\NTDS" `
+-DomainMode "Win2016" `
+-DomainName $dominioFQDN `
+-DomainNetbiosName $dominioNETBIOS `
+-SafeModeAdministratorPassword (ConvertTo-SecureString -string $adminPass -AsPlainText -Force)
+-ForestMode "Win2016" `
+-InstallDns:$True `
+-LogPath "C:\Windows\NTDS" `
+-NoRebootOnCompletion:$False `
+-SysvolPath "C:\Windows\SYSVOL" `
+-Force:$true 
+
+--> DEGRADAR un controlador de dominio:
+Import-Module ADDSDeployment
+Uninstall-ADDSDomainController -DemoteOperationMasterRole:$true -ForceRemoval:$true -Force:$true
+
+--> DESINSTALAR los roles y servicios de active directory:
+
+Uninstall-WindowsFeature -Name AD-Domain-Services, DNS -Confirm:$false
+
+
+
+
