@@ -1,0 +1,61 @@
+# AÑADIR UN NUEVO CONTROLADOR DE DOMINIO EN UN BOSQUE EXISTENTE -REPLICA:
+
+--> Configurar el nombre de máquina y de la red
+
+$nameServer="orion-repli"
+$addressIP="192.25.81.253"
+$gw="192.25.81.254"
+$networkInternal="Ethernet 1"
+$dns="192.25.81.254"
+Rename-Computer -NewName $nameServer
+Get-NetAdapter –name $networkInternal | Remove-NetIPAddress -Confirm:$false
+Get-NetAdapter –name $networkInternal | New-NetIPAddress –addressfamily IPv4 –ipaddress $addressIP –prefixlength 24 –type unicast
+Set-DnsClientServerAddress -InterfaceAlias $networkInternal -ServerAddresses $dns
+Restart-Computer -force
+
+--> PUESTA en marcha del controlador adicional server core:
+
+- importar el modulo de powerchell que nos permite administrar el servidor
+Import-Module ServerManager
+
+-instalar las caracteristicas de los servicios del directorio
+
+Add-WindowsFeature AD-Domain-Services
+
+-importar el modulo que nos permitira instalar el directorio activo
+
+Import-Module ADDSDeployment
+
+----> CREAR un nuevo controlador del dominio:
+
+Install-ADDSDomainController `
+-DomainName "smr.local" `
+-Credential (Get-Credential) `
+-SiteName "Default-First-Site-Name" `
+-InstallDNS:$true `
+-NoGlobalCatalog:$false `
+-CreateDNSDelegation:$false `
+-ReplicationSourceDC "orion.smr.local" `
+-CriticalReplicationOnly:$false `
+-DatabasePath "C:\Windows\NTDS" `
+-LogPath "C:\Windows\NTDS" `
+-NoRebootOnCompletion:$false `
+-SysvolPath "C:\Windows\SYSVOL" `
+-Force:$true
+# NOTA:orion es el nombre del equipo servidor maestro de operaciones
+
+---> COmprobacion de la replica
+dsquery user -name *
+
+--> ULtima vez cuando se replicaron los servidores:
+
+repadmin /replsum * /bysrc /bydest /sort:delta
+
+--> COMPROBAR EL FUNCIONAMIENTO:
+nltest /DSGetDC:SMR.LOCAL
+
+--> servidor al que esta conectafo
+
+%logonserver%
+
+
